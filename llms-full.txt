@@ -1,0 +1,1023 @@
+# H Docs
+
+> Documentation for the H system — home of Woodr, Woopy's drawing language.
+
+## H Docs
+
+Documentation for the **H** system — an event-sourced personal-computing environment.
+
+The first thing documented here is **[Woodr](/woodr)** — *Woopy's drawing* — the small
+declarative language Woopy speaks to draw explanations directly on your screen while it
+talks. It began as a handful of annotation tags and grew, over one intense session, into a
+real compositional language: relational geometry, iteration, macros, conditionals,
+constraint solving, and a library that grows itself.
+
+### Start here
+
+* **[What is Woodr →](/woodr)** — the idea and why it exists
+* **[Getting started →](/woodr/getting-started)** — your first diagram in three lines
+* **[Reference →](/woodr/reference)** — every mark, operator, and control construct
+
+
+## Abstraction
+
+Woodr lets you **coin a construction once and reuse it** — the equivalent of functions.
+This is the feature that turns a fixed vocabulary into a language that can grow.
+
+### \[DEF] … \[ENDDEF]
+
+```woodr
+[DEF:NAME:param1,param2,…]
+  …body using $param1, $param2 …
+[ENDDEF]
+```
+
+The body is ordinary Woodr. Parameters are written `$name` and substituted at each use.
+
+### \[USE]
+
+```woodr
+[USE:NAME:arg1,arg2,…]
+```
+
+Expands the macro body inline with the arguments substituted. Arguments are typically
+`@point` references or numbers.
+
+### Example — a labelled midpoint
+
+```woodr
+[DEF:mark:a,b,name]
+  [PT:m:mid $a $b]
+  [POINT:@m:$name]
+[ENDDEF]
+
+[PT:P:200,200][PT:Q:600,200][PT:R:200,600]
+[USE:mark:P,Q,M1]
+[USE:mark:P,R,M2]
+```
+
+### Automatic namespacing (no collisions)
+
+Notice both uses define a local point called `m`. Woodr **auto-namespaces** each macro's
+own defined names per call, so they never clash — the first `USE` becomes `u1_m`, the
+second `u2_m`, transparently. You can `USE` the same macro as many times as you like.
+
+:::tip
+A macro that draws a repeated motif (a graph node, a molecule, a UML box) plus
+[iteration](/woodr/iteration) is powerful: `[REPEAT]` the anchor points, then `[USE]` the
+motif at each one.
+:::
+
+### Growing the library
+
+A one-off `[DEF]` lives for a single reply. To keep a good construction **forever**, Woopy
+can save it to the [library](/woodr/library) with `draw_lib_add` — after which it's
+fetchable by name on any future turn. That's how Woodr's vocabulary grows over time.
+
+
+## Choreography
+
+Woodr is unusual among drawing languages: it has **time**. A Woodr program isn't rendered
+all at once — it *plays*, in step with what Woopy is saying.
+
+### Marks appear as they're spoken
+
+Woopy's reply streams sentence by sentence, and each sentence's marks are revealed **the
+moment that sentence is spoken**. So you place a tag right where you say the words for it:
+
+```woodr
+First, here's the circle. [CIRCLE:O:960,540,300]
+Now pick a point on top. [PT:B:on O 90][POINT:@B:B]
+```
+
+The circle appears as Woopy says "here's the circle"; `B` appears as it says "on top".
+Marks **accumulate** as the explanation builds.
+
+### Pacing controls
+
+| Tag           | Effect                                                                      |
+| ------------- | --------------------------------------------------------------------------- |
+| `[PAUSE:800]` | Hold \~0.8 s before the next beat                                           |
+| `[CLEAR]`     | Wipe the current marks — start a fresh step (spotlight one thing at a time) |
+| `[BEAT]`      | Force a new beat inside a single sentence                                   |
+
+### A stepped walkthrough
+
+```woodr
+Step one — click here. [POINT:@save:save] [PAUSE:600]
+[CLEAR] Step two — now the menu opens. [POINT:@menu:menu]
+```
+
+`[CLEAR]` between steps means only the current step is on screen — ideal for "do this, then
+this" instructions.
+
+### And it fades
+
+When the turn ends, the whole drawing fades out on its own. Woodr marks are **transient**
+by design — they're an explanation, not a document.
+
+
+## Color
+
+By default Woodr draws in a single blue accent. `[COLOR]` changes the **pen**: every mark
+drawn *after* it takes that color, until the next `[COLOR]` — or the turn / a `[CLEAR]`
+resets it to blue.
+
+### \[COLOR]
+
+```woodr
+[COLOR:name]
+```
+
+It's a state change, not a drawn mark — think of it as picking up a differently colored pen.
+Set it at the **start** of the sentence whose marks it applies to.
+
+```woodr
+[COLOR:green]the average line [LINE:@A,@C]
+[COLOR:red]and the tangent [LINE:@P,@Q]
+```
+
+### The palette
+
+Colors can be named by **meaning** or by **hue** — both map to bright, overlay-friendly
+values that read on light and dark screens.
+
+| Semantic           | Hue aliases                         |
+| ------------------ | ----------------------------------- |
+| `good`             | `green`, `ok`, `go`                 |
+| `bad`              | `red`, `danger`, `error`, `wrong`   |
+| `warn`             | `amber`, `yellow`, `warning`        |
+| `info`             | `cyan`, `teal`                      |
+| `accent` (default) | `blue`                              |
+| —                  | `orange`, `purple`, `pink`, `white` |
+
+### Why color matters
+
+Two jobs:
+
+1. **Distinguish parts.** A diagram with a curve, a secant, and a tangent all in one blue
+   is hard to read. Blue curve, green secant, red tangent separates them instantly.
+2. **Carry meaning.** `good`/green vs `bad`/red vs `warn`/amber lets a mark *mean* something
+   before the label is even read.
+
+:::note
+`[CHECK]` (green ✓) and `[CROSS]` (red ✗) keep their intrinsic colors regardless of the
+pen — they're inherently semantic.
+:::
+
+### \[THEME] — a whole preset
+
+Where `[COLOR]` sets one pen, `[THEME:name]` picks a **named preset** for everything after it
+— the flat, deterministic version of Penrose's content/cosmetics split (no separate style
+language, just a bag of defaults).
+
+```woodr
+[THEME:blueprint]   the whole figure now draws in the blueprint pen
+```
+
+| Theme       | Pen        |
+| ----------- | ---------- |
+| `chalk`     | soft white |
+| `blueprint` | blue       |
+| `sunset`    | orange     |
+| `forest`    | green      |
+| `grape`     | purple     |
+
+
+## Conditionals
+
+Woodr can keep or drop part of a drawing based on a comparison.
+
+### \[IF] … \[ELSE] … \[ENDIF]
+
+```woodr
+[IF:condition] …kept when true… [ELSE] …kept when false… [ENDIF]
+```
+
+The `[ELSE]` branch is optional. Conditionals are evaluated **after** macro parameters and
+loop indices are filled in, so by the time a condition is checked both sides are numbers.
+
+### Comparisons
+
+Supported operators: `>`, `<`, `>=`, `<=`, `==`, `!=`, and `%` (modulo) inside the
+arithmetic. Examples: `$val > 50`, `i % 2 == 0`, `3 >= 2`.
+
+### Branching inside a macro
+
+The natural home for `[IF]` is a `[DEF]` whose output depends on a parameter:
+
+```woodr
+[DEF:node:val,x,y]
+  [ELLIPSE:$x,$y,34,34:]
+  [TEXT:$x,$y:$val]
+  [IF:$val >= 50][CHECK:$x,$y][ELSE][CROSS:$x,$y][ENDIF]
+[ENDDEF]
+
+[USE:node:70,600,300]     // draws a ✓ (70 ≥ 50)
+[USE:node:20,900,300]     // draws a ✗ (20 < 50)
+```
+
+### Every-other patterns
+
+Combined with the loop index, `%` makes alternating patterns easy — for example, colouring
+or marking every other item in a `[REPEAT]`-generated family.
+
+
+## Constraints
+
+These are the advanced relational forms — points defined by *solving* a geometric
+constraint. Like the rest of the [kernel](/woodr/kernel), you state the relationship and
+the renderer computes the exact pixel. They're written the same way: `[PT:NAME:EXPR]`.
+
+### intersect
+
+```woodr
+[PT:X:intersect A B C D]
+```
+
+The point where line **A–B** crosses line **C–D**. (Returns nothing if the lines are
+parallel.) Great for diagonals, cevians, or where a construction line meets an axis.
+
+### foot
+
+```woodr
+[PT:F:foot P A B]
+```
+
+The **foot of the perpendicular** from `P` onto line `A–B` — i.e. the projection of `P`
+onto that line. Useful for altitudes, dropping a value to an axis, or a right-angle
+construction.
+
+### rotate
+
+```woodr
+[PT:P2:rotate P C deg]
+```
+
+`P` rotated around centre `C` by `deg` degrees. Compose it with [iteration](/woodr/iteration)
+to spin a motif around a point.
+
+### circumcenter
+
+```woodr
+[PT:O:circumcenter A B C]
+```
+
+The centre of the unique circle passing through `A`, `B`, and `C`. Pair it with a
+`[CIRCLE]` to draw that circumscribed circle exactly.
+
+### tangent
+
+```woodr
+[PT:T:tangent P O side]     // side = +1 or -1 (the two tangent points)
+```
+
+The point on circle `O` where a line from the external point `P` just touches the circle.
+The line `P→T` is guaranteed perpendicular to the radius `O→T` — a true tangent. There are
+two; `side` picks which.
+
+### Why this matters
+
+Constraint-defined points are the difference between a diagram that *looks* roughly right
+and one that is provably correct. An altitude drawn with `foot` really is perpendicular; a
+tangent drawn with `tangent` really does touch. The author never computes any of it.
+
+
+## Functions & curves
+
+For a graph, a curve, or anything with a **tangent**, Woodr has a real function object. You
+give a formula; the renderer samples it, draws the exact curve, and lets you place points
+*on* it and draw tangents that genuinely *touch* it. No hand-picked points, no eyeballing.
+
+### \[PLOT]
+
+```woodr
+[PLOT:NAME:formula:x0,x1,bx,by,bw,bh:label]
+```
+
+Draws the function `formula` (in `x`) sampled over the domain `[x0, x1]`, mapped into the
+screen box `(bx, by, bw, bh)` — and registers it under `NAME`. The y-axis is flipped so
+larger values are higher on screen.
+
+```woodr
+[PLOT:f:x^2:-3,3,700,300,520,340:y = x²]
+```
+
+#### The formula language
+
+The evaluator understands: `+ - * / % ^`, parentheses, unary minus, the constants `pi` and
+`e`, and the functions `sin cos tan asin acos atan sqrt abs exp ln log`.
+
+```
+sin(x)        0.5*x^2 - 2       exp(-x^2)       sqrt(x)        3*sin(2*x)+1
+```
+
+### A point exactly on the curve — `onplot`
+
+```woodr
+[PT:P:onplot NAME xval]
+```
+
+Resolves to the point on the plotted curve at `x = xval`, in screen pixels. Because it uses
+the *same* function and mapping as the drawn curve, the point is guaranteed to sit **on**
+it.
+
+```woodr
+[PLOT:f:x^2:-3,3,700,300,520,340:y=x²]
+[PT:C:onplot f 1][POINT:@C:here]
+```
+
+### A true tangent — `tanpoint`
+
+```woodr
+[PT:L:tanpoint NAME xval -120]
+[PT:R:tanpoint NAME xval 120]
+[LINE:@L,@R]
+```
+
+`tanpoint NAME x dpx` is a point `dpx` screen-pixels sideways from the contact point,
+*along the tangent* to the curve at `x`. The renderer computes the slope, so the line
+through two tanpoints is a real tangent — it touches the curve at `x` and nowhere near it
+crosses by accident.
+
+### Worked example — the Mean Value Theorem
+
+```woodr
+[PLOT:f:0.6*x^2 - 0.1*x^3:0,5,300,200,900,500:the drive]
+[PT:A:onplot f 0][PT:B:onplot f 5]
+[COLOR:green][LINE:@A,@B:average]
+[PT:L:tanpoint f 3 -140][PT:R:tanpoint f 3 140]
+[COLOR:red][LINE:@L,@R:tangent] [PT:C:onplot f 3][POINT:@C:this moment]
+```
+
+The average (secant) is green, the tangent is red and **actually touches** the curve at the
+marked moment — the whole point of the theorem, drawn exactly.
+
+:::tip
+This is the right tool for **derivatives, tangents, the Mean Value Theorem, and integrals**
+— anything where a point must lie on a curve or a line must be tangent to it.
+:::
+
+
+import { Woodr } from '../../components/Woodr'
+
+## Getting started
+
+Woodr is a set of **tags** interleaved with what Woopy says. Tags are never spoken — only
+the text *outside* tags is read aloud. Everything renders on a transparent overlay on the
+active monitor, in pixels: `x` grows right (`0..W`), `y` grows **down** (`0..H`).
+
+### The three things you need
+
+1. **A mark** — something drawn: a point, line, circle, polygon, label, …
+2. **A named point** — `[PT:NAME:…]` binds a coordinate to a name.
+3. **A reference** — `@NAME` drops that point's coordinates wherever a coordinate goes.
+
+### Your first diagram
+
+```woodr
+[PT:A:400,600][PT:B:900,600][PT:C:650,300]
+[POLY:@A;@B;@C:triangle]
+```
+
+<Woodr source={`[PT:A:400,600][PT:B:900,600][PT:C:650,300][POLY:@A;@B;@C:triangle]`} caption="Rendered live by @h/woodr-render-svg — the same IR Woopy draws." />
+
+That defines three points and draws a triangle through them. Note you named each point
+**once** — you never re-typed `400,600`. That alone removes a whole class of mistakes
+(connecting the wrong corners, mismatched coordinates).
+
+### Make it exact
+
+Instead of eyeballing where `C` goes, put it *on a circle*:
+
+```woodr
+[CIRCLE:O:650,500,200]      // circle named O
+[PT:A:on O 200][PT:B:on O 340][PT:C:on O 90]
+[POLY:@A;@B;@C:] [POINT:@C:top]
+```
+
+Now `C` is guaranteed to sit on the circle. This is the heart of Woodr — see
+**[Points & the kernel →](/woodr/kernel)**.
+
+:::tip
+Woopy places each mark *as it says the words for it* — so tags are written right where
+they belong in the narration. See [Choreography](/woodr/choreography).
+:::
+
+
+## Woodr
+
+**Woodr** — *Woopy's drawing* — is the language Woopy uses to draw on your screen while it
+explains something out loud. You don't write Woodr; Woopy speaks it. But it is a real
+language, with the properties that make one:
+
+* **Composition** — marks are built from named points, and points are defined by their
+  *relationship* to other points. Meaning builds from smaller meaning.
+* **Naming / binding** — `[PT:NAME:…]` binds a name; `@NAME` references it.
+* **An evaluator** — the kernel resolver parses Woodr, solves the relationships, and
+  **compiles down** to exact pixels.
+* **Iteration & abstraction** — `[REPEAT]` and `[DEF]`/`[USE]` — loops and functions.
+* **A growing library** — verified constructions Woopy can fetch and even *add to*.
+
+### The core idea: state relationships, not coordinates
+
+The hard part of drawing a diagram is the geometry — where does a triangle's vertex land
+so it sits *exactly* on a circle? A language model is bad at that arithmetic and tends to
+eyeball it a few pixels off. Woodr removes the problem: you **state the relationship** and
+the renderer computes the exact pixel.
+
+```woodr
+[CIRCLE:O:960,540,300]      // a circle named O
+[PT:B:on O 90]              // B is EXACTLY on O at the top — not "about (960,240)"
+```
+
+Because `B` is *defined as* "on the circle at the top", it can never drift. Precision is
+**structural**, not a thing the author has to get right.
+
+### Two unusual properties
+
+1. **It's embedded in speech.** Woodr is woven through natural-language narration, emitted
+   by an LLM in real time. It isn't written to a file — it's *spoken*, tag by tag, as
+   Woopy talks.
+2. **It has time.** [Choreography](/woodr/choreography) — beats, pauses, reveals — means a
+   Woodr program doesn't just render, it *plays*, in step with the words.
+
+### What a Woodr program looks like
+
+A full proof of Thales' theorem, drawn exactly, without typing a single coordinate twice:
+
+```woodr
+[CIRCLE:O:960,540,300]
+[PT:A:on O 180][PT:B:on O 90][PT:C:on O 0]
+[LINE:@A,@C] [POLY:@A;@B;@C:] [RIGHTANGLE:@B,@A,@C]
+[POINT:@A:A][POINT:@B:B][POINT:@C:C][POINT:@O:O]
+```
+
+Every point is exact, the right angle is snug in the corner, and the whole thing fades
+after Woopy finishes explaining it.
+
+Continue to **[Getting started →](/woodr/getting-started)**.
+
+
+## Iteration
+
+When a figure needs many points in a pattern — a polygon's vertices, a grid, tick marks,
+orbiting dots — you don't list them by hand. Woodr has a loop.
+
+### \[REPEAT]
+
+```woodr
+[REPEAT:NAME:count:pointExpr]
+```
+
+Defines `NAME0, NAME1, … NAME(count-1)`. Inside `pointExpr`, the loop index **`i`**
+(0-based) is available in any arithmetic.
+
+```woodr
+[CIRCLE:O:960,540,300]
+[REPEAT:V:6:on O 60*i]      // V0..V5 at 0°, 60°, 120°, …, 300°
+```
+
+The little arithmetic evaluator supports `+ - * / %` and parentheses — so `60*i`,
+`i/5`, `90 + i*45`, `i%2` all work.
+
+### `@@NAME` — the whole family
+
+`@@NAME` expands to the coordinates of the entire family as a point-list, ready for a path
+mark:
+
+```woodr
+[POLY:@@V:hexagon]
+```
+
+### A regular hexagon in one line
+
+```woodr
+[CIRCLE:O:960,540,300][REPEAT:V:6:on O 60*i][POLY:@@V:hexagon]
+```
+
+Every vertex lands **exactly** on the circle. Change `6` to any `n` for a regular n-gon;
+change `on O` to `along A B i/5` for evenly-spaced points on a segment, or
+`offset A i*80 0` for a row.
+
+### More patterns
+
+```woodr
+// tick marks along a number line A→B
+[REPEAT:T:11:along A B i/10]
+
+// a ring of orbiting dots
+[REPEAT:P:12:on Ring 30*i]
+
+// a grid row (combine two REPEATs for a full grid)
+[REPEAT:G:8:offset Origin i*120 0]
+```
+
+
+import { Woodr } from '../../components/Woodr'
+
+## Points & the kernel
+
+The **kernel** is the small core of Woodr that everything else is built on: **named,
+relationally-defined points**. This is where Woodr's precision comes from — you describe a
+point by its *relationship* to other things, and the renderer computes the exact pixel.
+
+### Defining a point
+
+```woodr
+[PT:NAME:EXPR]
+```
+
+`NAME` is a letters-and-digits identifier. `EXPR` is one of the forms below. Reference the
+resolved point anywhere with `@NAME`.
+
+### Absolute
+
+```woodr
+[PT:A:400,600]     // literally (400, 600)
+```
+
+Use absolute coordinates only for things you can actually see on the screen (a control, a
+spot the user pointed at). For constructed geometry, prefer a relationship.
+
+### Named circles
+
+A circle can be named so points can sit **on** it:
+
+```woodr
+[CIRCLE:O:960,540,300:label]     // centre (960,540), radius 300
+[CIRCLE:O:@Center,300]           // centre is a named point
+```
+
+Naming a circle both **draws** it and registers it for `on`. Here every vertex is placed by
+*relationship* — `on O deg` — so the right angle is exact (Thales' theorem):
+
+<Woodr source={`[CIRCLE:O:960,540,300][PT:A:on O 180][PT:B:on O 90][PT:C:on O 0][LINE:@A,@C][POLY:@A;@B;@C:][RIGHTANGLE:@B,@A,@C][POINT:@A:A][POINT:@B:B][POINT:@C:C]`} caption="A, B, C never touch a typed coordinate — the resolver computes each pixel." />
+
+### Relational forms
+
+| Form             | Meaning                                                                                 |
+| ---------------- | --------------------------------------------------------------------------------------- |
+| `on O deg`       | Exactly on circle **O** at an angle (0 = right, 90 = **top**, 180 = left, 270 = bottom) |
+| `mid A B`        | Midpoint of A and B                                                                     |
+| `along A B t`    | A fraction `t` (0..1) of the way from A to B                                            |
+| `polar A r deg`  | Distance `r` from A at an angle                                                         |
+| `offset A dx dy` | A shifted by (dx, dy)                                                                   |
+| `centroid A B C` | The centroid (average) of three points                                                  |
+| `reflect P A B`  | P mirrored across line A–B                                                              |
+
+More advanced [constraints](/woodr/constraints) — `intersect`, `foot`, `rotate`,
+`circumcenter`, `tangent` — extend this same grammar.
+
+### Why "on O 90" instead of a coordinate
+
+For a circle centred at `(cx, cy)` with radius `r`, the point at angle θ is
+`(cx + r·cosθ, cy − r·sinθ)` (the minus because y grows downward). A model asked to compute
+that will often land a few pixels off, so a triangle's vertex floats *near* the circle
+instead of *on* it. By writing `on O 90`, the renderer does the trig — the vertex touches
+the arc, every time.
+
+### The \[RIGHTANGLE] marker
+
+```woodr
+[RIGHTANGLE:@corner,@a,@b]
+```
+
+Draws a small square snug **in** the corner at `@corner`, between the directions to `@a`
+and `@b`. The renderer computes the corner geometry, so it's always tucked in the angle —
+not floating nearby.
+
+### How it compiles
+
+The kernel is a **compile pass**. `[PT]`, `[CIRCLE]`, `[RIGHTANGLE]`, and the constructs on
+the next pages are all resolved down to the plain [marks](/woodr/marks) — `[ELLIPSE]`,
+`[POLY]`, `[LINE]`, … — before anything is drawn. So the kernel adds power without needing
+any new rendering: it's a language on top of the marks.
+
+
+## The library
+
+The [kernel](/woodr/kernel) builds most figures directly. For **named or complex**
+constructions — a theorem diagram, a set of axes, a bell curve, a tree — Woodr has a
+searchable **library** of verified recipes, fetched only when needed.
+
+### Two tiers, on purpose
+
+* **Kernel** (always available): relational points, marks, iteration, macros — the fast
+  path. A circle, a triangle, an arrow: just draw it.
+* **Library** (fetched): higher-level constructions. Fetching is a tool round-trip, so it's
+  reserved for figures worth it — never for a basic shape.
+
+This split keeps the common case instant while letting the library scale without bloating
+what Woopy carries in its head.
+
+### Fetching — `draw_lib`
+
+Woopy searches by topic and gets back a recipe in Woodr to adapt:
+
+```
+draw_lib("thales theorem")
+draw_lib("normal distribution")
+draw_lib("binary tree")
+```
+
+Built-in constructions include: inscribed right triangle (Thales), right-triangle squares
+(Pythagoras), xy axes, number line, bell curve, unit-circle angle, flow boxes, and a tree
+layout.
+
+### Growing it — `draw_lib_add`
+
+The library is a **flywheel**, not a fixed set. When Woopy builds a good, reusable
+construction, it can save it:
+
+```
+draw_lib_add(
+  name:     "benzene_ring",
+  tags:     "chemistry,hexagon,aromatic",
+  template: "[DEF:benzene:cx,cy,r] … [ENDDEF]"
+)
+```
+
+The construction is written to `data/woopy-draw-library.json` and merged into future
+`draw_lib` searches. So a figure Woopy gets right once becomes a reusable **word** in the
+language — and Woodr's vocabulary grows the more it's used.
+
+### Best practice for a saved construction
+
+Save it as a parameterized [macro](/woodr/abstraction) (`[DEF]…[ENDDEF]`) so it can be
+`[USE]`d with different coordinates, and use [relational points](/woodr/kernel) inside so it
+stays exact wherever it's placed.
+
+
+import { Woodr } from '../../components/Woodr'
+
+## Marks — the vocabulary
+
+Marks are the things Woodr actually draws. Everything higher-level (relational points,
+iteration, macros) ultimately compiles to these. Coordinates are pixels on the active
+screen; any coordinate can be a `@NAME` reference.
+
+### Geometry
+
+| Mark                                     | Draws                                                                            |
+| ---------------------------------------- | -------------------------------------------------------------------------------- |
+| `[POINT:x,y:label]`                      | A dot with a short label                                                         |
+| `[LINE:x1,y1,x2,y2:label]`               | A straight line (the `:label` is optional)                                       |
+| `[ARROW:x1,y1,x2,y2:label]`              | An arrow from p1 → p2                                                            |
+| `[BOX:x,y,w,h:label]`                    | A rectangle (top-left origin)                                                    |
+| `[ELLIPSE:cx,cy,rx,ry:label]`            | A real circle/ellipse (`rx = ry` → circle)                                       |
+| `[CURVE:x1,y1;x2,y2;…:label]`            | A smooth curve through the points                                                |
+| `[POLY:x1,y1;x2,y2;…:label]`             | A closed polygon                                                                 |
+| `[SQUARE:x1,y1,x2,y2,awayX,awayY:label]` | A square on side p1–p2, built on the side **away** from the given interior point |
+
+:::warning
+`[LINE]` and `[ARROW]` separate coordinates with **commas**. Only the point-list marks
+(`[CURVE]`, `[POLY]`, `[CONNECT]`) use **semicolons** between points.
+:::
+
+<Woodr source={`[COLOR:blue][LINE:120,120,520,120][ARROW:120,220,520,220:arrow][BOX:120,300,300,150:box][COLOR:green][ELLIPSE:820,220,120,80:oval][WEIGHT:2][CURVE:1000,120;1120,200;1240,140;1360,240:curve][COLOR:amber][POLY:1000,360;1240,360;1120,540:poly]`} caption="Every base mark, rendered live." />
+
+### Geometry annotations & data
+
+| Mark                                                | Draws                                                                                                                                    |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `[ANGLEARC:@V,@A,@B:label]`                         | The angle arc at vertex V between the arms toward A and B (smaller sweep), label on the bisector                                         |
+| `[DIM:@A,@B:label]`                                 | A dimension line — the measured segment offset sideways with end ticks and the measure label (swap the endpoints to flip the side)       |
+| `[AXES:bx,by,bw,bh:x0,x1,y0,y1:label]`              | Real x/y axes with arrowheads and nice-step numeric ticks; give a `[PLOT]`/`[BARS]`/`[SCATTER]` the **same box** so they share the frame |
+| `[BARS:v1,v2,…:bx,by,bw,bh:label]`                  | A bar chart from a value list (zero baseline; bars respect `[FILL]`/`[COLOR]`)                                                           |
+| `[SCATTER:x,y;x,y;…:x0,x1,y0,y1:bx,by,bw,bh:label]` | Data points (world coordinates mapped into the box)                                                                                      |
+| `[GROUP:dx,dy,s,cx,cy]…[ENDGROUP]`                  | The inner scene translated by (dx,dy) and uniformly scaled by s about (cx,cy) — a motif moved/scaled as a unit                           |
+
+<Woodr source={`[PT:V:400,620][PT:A:900,620][PT:B:700,300][LINE:@V,@A][LINE:@V,@B][ANGLEARC:@V,@A,@B:θ][DIM:@V,@A:the base][COLOR:cyan][FILL:cyan][BARS:3,7,5,9:1100,300,600,360:][COLOR:white][AXES:1100,300,600,360:0,4,0,10]`} caption="Angle arc + dimension line on the left; AXES framing BARS on the right." />
+
+### Labels & text
+
+| Mark                          | Draws                                       |
+| ----------------------------- | ------------------------------------------- |
+| `[TEXT:x,y:note]`             | A short on-screen label                     |
+| `[MATH:x,y:LaTeX]`            | A rendered formula — use for every equation |
+| `[BRACE:x1,y1,x2,y2:label]`   | A brace over a span                         |
+| `[CALLOUT:x,y:text]`          | A speech bubble with a leader line to (x,y) |
+| `[CHECK:x,y]` / `[CROSS:x,y]` | A green ✓ / red ✗                           |
+
+### Text-anchoring (OCR)
+
+To mark **actual text on the screen** (a word, a line of code, an error), don't box a
+guessed rectangle — name the text and Woodr finds it by OCR:
+
+```woodr
+[HIGHLIGHT:"deprecated"]     [UNDERLINE:"submit"]
+[CIRCLE:"error"]             [STRIKE:"old value"]
+```
+
+Add `@x,y` after the quote to disambiguate a repeated phrase.
+
+### Attention & motion
+
+| Mark                                                | Effect                                         |
+| --------------------------------------------------- | ---------------------------------------------- |
+| `[INDICATE:x,y:label]` / `[INDICATE:x,y,w,h:label]` | **Grow-and-flash emphasis** — see below        |
+| `[SPOTLIGHT:x,y,w,h]`                               | Dim everything except a cutout                 |
+| `[STEP:x,y:label]`                                  | A numbered ①②③ badge                           |
+| `[RIPPLE:x,y]` / `[PULSE:x,y]`                      | A tap ripple / a repeating pulse               |
+| `[DEMO:x1,y1;…:label]`                              | A ghost cursor that walks a path (visual only) |
+| `[SPIN2D:kind:x,y,size]` / `[SPIN3D:kind:x,y,size]` | Live 2D / 3D animations                        |
+| `[IMAGE:x,y,w,h:path]`                              | A real image on the overlay (plays if a GIF)   |
+| `[TRACK:x,y:label]`                                 | A box that follows a control as it scrolls     |
+
+#### \[INDICATE] — "look at THIS"
+
+The core explanatory gesture (the same idea as Manim's `Indicate`): the target briefly
+**grows past its size and flashes a warm colour, then settles** back. One shot — it draws
+the eye without the nagging of a forever `[PULSE]`.
+
+```woodr
+[INDICATE:@P:the vertex]              ; point form — grows a ring in at a spot
+[INDICATE:640,300,360,120:this term]  ; region form — grows a frame around a box
+```
+
+Reach for it whenever you say *"notice this"* / *"here's the key part"* — a vertex, a term
+in an equation, a box in a diagram, a control on screen. It's the difference between a
+static drawing and one that *directs attention over time*.
+
+| Cue           | Use when                                                        |
+| ------------- | --------------------------------------------------------------- |
+| `[INDICATE]`  | Draw the eye to one thing **once**, then move on (the default). |
+| `[PULSE]`     | Something must stay flagged the whole time (a live warning).    |
+| `[SPOTLIGHT]` | Everything else should recede — isolate one region completely.  |
+| `[RIPPLE]`    | Show *where* an action happens (a tap/click point).             |
+
+### Rich cards & actions
+
+`[CODE:x,y:snippet]` and `[TABLE:x,y:a|b;c|d]` draw small cards. `[CLICK:x,y]` and
+`[TYPE:"text"]` perform **real input** — gated, and only when the user explicitly asks
+Woopy to act.
+
+
+## Motion
+
+Choreography (see [Choreography](/woodr/choreography)) reveals marks *step by step* as you
+speak. **Motion** is different: it makes a mark **move continuously** over a span of seconds.
+This is what puts Woodr in Manim's space — but live, spoken, and on your real screen.
+
+The idea is stolen straight from GeoGebra's sliders: **an animated value is just a free
+variable; sweeping it re-drives everything defined in terms of it.** Woodr already resolves a
+scene from its relationships, so to animate, it simply **re-resolves the whole scene each
+frame** with the swept value substituted in. The resolver *is* the animation engine.
+
+### \[ANIM]
+
+```woodr
+[ANIM:t: from to dur=Xs ease=inout]
+   … your scene, using t …
+[ENDANIM]
+```
+
+`t` sweeps from `from` to `to` over `dur` seconds; every frame the scene is redrawn with the
+current `t`. `ease` is `inout` (default), `linear`, `in`, or `out`. Add `loop` to repeat.
+
+Anything defined before the block is available inside it, but keep the **animated scene inside
+the block** — that's what gets redrawn.
+
+### Glide a point along a segment
+
+```woodr
+[PT:A:200,400][PT:B:900,400]
+[ANIM:t:0 1 dur=2s]
+  [PT:P:along A B t][POINT:@P:moving]
+[ENDANIM]
+```
+
+`P` is `along A B t`; as `t` goes 0 → 1, `P` slides from `A` to `B`.
+
+### The derivative — a tangent sliding along a curve
+
+The canonical calculus animation, and the reason Motion matters:
+
+```woodr
+[ANIM:s:0.3 4.7 dur=4s]
+  [PLOT:f:0.6*x^2-0.1*x^3:0,5,300,200,900,500]
+  [PT:C:onplot f s]
+  [COLOR:red][TANLINE:f:s]
+  [COLOR:blue][POINT:@C:here]
+[ENDANIM]
+```
+
+As `s` sweeps the domain, the contact point rides the curve and the tangent line pivots with
+the true local slope — you *watch the derivative change*. Nothing about the tangent is
+animated by hand; it re-resolves exactly, every frame.
+
+### Orbit a point around a circle
+
+```woodr
+[CIRCLE:O:640,360,200]
+[ANIM:a:0 360 dur=3s ease=linear]
+  [PT:P:on O a][POINT:@P:orbiting]
+[ENDANIM]
+```
+
+### Draw the trail too
+
+To show *both* the mover and the path it sweeps, draw the path statically with a
+[`[PCURVE]`](/woodr/paths) and move a point along it:
+
+```woodr
+[PCURVE:S: 640+3*a*cos(a) ; 360+3*a*sin(a) ; a 0 25 : spiral]
+[ANIM:t:0 1 dur=3s]
+  [PT:P:pointon S t][POINT:@P:tracing]
+[ENDANIM]
+```
+
+:::tip
+Reach for Motion when **change over time is the point** — a sweep, an orbit, a growing angle,
+a derivative. For a static figure revealed in sync with your words, use plain
+[choreography](/woodr/choreography) instead. One animation per turn; keep the scene small.
+:::
+
+### How it resolves
+
+At compile time the `[ANIM]…[ENDANIM]` block is lifted out, the variable is swept across \~25
+frames per second, and each frame is fully re-resolved to exact marks and stored. The renderer
+plays the frames on a timer in a dedicated layer, then holds the final frame. Deterministic,
+self-contained, and it reuses the exact same drawing path as static marks — so an animated
+tangent looks identical to a still one.
+
+
+## Paths & parametric curves
+
+`[CURVE]` (see [Marks](/woodr/marks)) smooths through raw coordinates. **`[PATH]`** and
+**`[PCURVE]`** are the relational, registered upgrades: they take named points or formulas,
+they can be closed and tensioned, and — crucially — you can put **points on them**.
+
+### \[PATH] — a smooth curve through named points
+
+```woodr
+[PATH:NAME: A .. B .. C .. D]
+```
+
+Draws a smooth curve through the named knots `A, B, C, D` (a centripetal Catmull-Rom spline —
+it passes through every knot exactly, with no overshoot). Options:
+
+* `.. cycle` closes the curve into a loop.
+* `tension 0.4` tightens it toward straight segments (`0` = full curve, `1` = polyline).
+* `: label` at the end names it on screen.
+
+```woodr
+[PT:A:200,300][PT:B:500,180][PT:C:800,320][PT:D:1100,240]
+[PATH:river: A .. B .. C .. D : the path]
+
+[PT:P:120,500][PT:Q:520,520][PT:R:320,760]
+[PATH:blob: P .. Q .. R .. cycle tension 0.3]
+```
+
+### \[PCURVE] — a parametric curve
+
+```woodr
+[PCURVE:NAME: xexpr ; yexpr ; t0 t1 : label]
+```
+
+Plots `(x(t), y(t))` as `t` runs from `t0` to `t1` — the things `y = f(x)` can't draw:
+circles, spirals, Lissajous figures, cycloids. The formulas take the same functions as
+[`[PLOT]`](/woodr/functions) and **must use parentheses**: `cos(t)`, not `cos t`.
+
+```woodr
+[PCURVE:orbit: 640+200*cos(t) ; 360+200*sin(t) ; t 0 6.283 : circle]
+[PCURVE:spiral: 640+3*t*cos(t) ; 360+3*t*sin(t) ; t 0 25 : spiral]
+[PCURVE:liss: 640+300*sin(3*t) ; 360+300*sin(2*t) ; t 0 6.283]
+```
+
+### Points on a path
+
+Once a `[PATH]` or `[PCURVE]` is registered, points can sit on it:
+
+| Point                      | Meaning                                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `[PT:G:pointon NAME t]`    | The point at arc-fraction `t` (0..1) along the curve — even-speed, so it's ideal to [animate](/woodr/motion) |
+| `[PT:F:closest P on NAME]` | The nearest point on the curve to `P`                                                                        |
+
+`closest … on` also works on a circle or a plotted function — it's the general
+foot-of-perpendicular onto *any* curve:
+
+```woodr
+[CIRCLE:O:640,360,200][PT:P:1000,360]
+[PT:F:closest P on O][POINT:@F:nearest point on the circle]
+```
+
+:::tip
+Combine the two: draw the trail with `[PCURVE]`, then move a `pointon` it with `[ANIM]` — the
+mover and its path from one construction. See [Motion](/woodr/motion).
+:::
+
+
+## Reference
+
+The complete Woodr surface. Coordinates are pixels on the active screen (`x` right, `y`
+down); any coordinate may be a `@NAME` reference.
+
+### Points — `[PT:NAME:EXPR]`
+
+| EXPR                 | Result                                                                 |
+| -------------------- | ---------------------------------------------------------------------- |
+| `x,y`                | Absolute point                                                         |
+| `on O deg`           | On circle `O` at angle (0 = right, 90 = top, 180 = left, 270 = bottom) |
+| `mid A B`            | Midpoint                                                               |
+| `along A B t`        | Fraction `t` (0..1) from A to B                                        |
+| `polar A r deg`      | Distance `r` from A at angle                                           |
+| `offset A dx dy`     | A shifted by (dx, dy)                                                  |
+| `centroid A B C`     | Centroid of three points                                               |
+| `reflect P A B`      | P mirrored across line A–B                                             |
+| `foot P A B`         | Foot of perpendicular from P onto line A–B                             |
+| `rotate P C deg`     | P rotated around C                                                     |
+| `intersect A B C D`  | Line A–B ∩ line C–D                                                    |
+| `circumcenter A B C` | Centre of the circle through A, B, C                                   |
+| `tangent P O side`   | Tangent point on circle O from external P (`side` = +1 / −1)           |
+| `onplot F x`         | The point exactly on plotted function `F` at `x`                       |
+| `tanpoint F x dpx`   | A point `dpx` px sideways along the tangent to `F` at `x`              |
+| `closest P on T`     | Nearest point on circle / plot / path `T` to `P`                       |
+| `pointon PATH t`     | Point at arc-fraction `t` (0..1) along a `[PATH]`/`[PCURVE]`           |
+
+### Circles, curves & angle marks
+
+| Tag                                    | Draws                                                      |
+| -------------------------------------- | ---------------------------------------------------------- |
+| `[CIRCLE:NAME:cx,cy,r:label]`          | A named circle (also usable for `on`)                      |
+| `[CIRCLE:NAME:@Center,r:label]`        | …with a named centre                                       |
+| `[RIGHTANGLE:@corner,@a,@b]`           | Right-angle marker in the corner                           |
+| `[PATH:NAME: A .. B .. C]`             | Smooth curve through named knots (`.. cycle`, `tension t`) |
+| `[PCURVE:NAME: xexpr ; yexpr ; t0 t1]` | Parametric curve `(x(t), y(t))`                            |
+| `[BISECT:PERP:A B]`                    | Perpendicular bisector of A–B (a line)                     |
+| `[BISECT:ANGLE:A B C]`                 | Bisector of the angle at vertex B                          |
+| `[TANLINE:PLOT:x]`                     | Tangent line to a plotted function at `x`                  |
+
+### Color, theme & motion
+
+| Tag                                           | Effect                                                   |
+| --------------------------------------------- | -------------------------------------------------------- |
+| `[COLOR:name]`                                | Set the pen for following marks (semantic or hue)        |
+| `[THEME:name]`                                | A whole pen preset (chalk/blueprint/sunset/forest/grape) |
+| `[ANIM:t: from to dur=Xs ease=…] … [ENDANIM]` | Sweep `t` over time, re-drawing the scene each frame     |
+
+### Iteration
+
+| Tag                             | Meaning                                                               |
+| ------------------------------- | --------------------------------------------------------------------- |
+| `[REPEAT:NAME:count:pointExpr]` | Defines `NAME0..NAME(count-1)`; `i` is the 0-based index              |
+| `@@NAME`                        | The whole family as a point-list (for `[POLY]`/`[CURVE]`/`[CONNECT]`) |
+
+Arithmetic in `pointExpr` / conditions: `+ - * / %` and parentheses.
+
+### Abstraction
+
+| Tag                                      | Meaning                                             |
+| ---------------------------------------- | --------------------------------------------------- |
+| `[DEF:NAME:params] … $params … [ENDDEF]` | Define a construction                               |
+| `[USE:NAME:args]`                        | Expand it inline (body-local names auto-namespaced) |
+
+### Conditionals
+
+| Tag                            | Meaning                                          |
+| ------------------------------ | ------------------------------------------------ |
+| `[IF:cond] … [ELSE] … [ENDIF]` | Keep one branch; `cond` uses `> < >= <= == != %` |
+
+### Choreography
+
+| Tag          | Effect                        |
+| ------------ | ----------------------------- |
+| `[PAUSE:ms]` | Hold before the next beat     |
+| `[CLEAR]`    | Wipe current marks (new step) |
+| `[BEAT]`     | Force a new beat mid-sentence |
+
+### Marks
+
+See **[Marks](/woodr/marks)** for the full table — `[POINT] [LINE] [ARROW] [BOX] [ELLIPSE] [CURVE] [POLY] [SQUARE] [MATH] [TEXT] [BRACE] [CALLOUT] [CONNECT] [CHECK] [CROSS] [HIGHLIGHT] [UNDERLINE] [CIRCLE:"text"] [STRIKE] [INDICATE] [SPOTLIGHT] [STEP] [RIPPLE] [PULSE] [DEMO] [SPIN2D] [SPIN3D] [IMAGE] [TRACK] [CODE] [TABLE] [CLICK] [TYPE]`.
+
+### Library tools
+
+| Tool                                 | Purpose                                                  |
+| ------------------------------------ | -------------------------------------------------------- |
+| `draw_lib(query)`                    | Fetch a verified construction for a named/complex figure |
+| `draw_lib_add(name, tags, template)` | Save a construction to the library for reuse             |
+
+### Resolution order
+
+Woodr compiles in this order, then the plain marks are drawn:
+
+1. `[ANIM]…[ENDANIM]` — lifted to an animation marker, its scene stashed for per-frame re-resolution
+2. `[DEF]`/`[USE]` — expand macros (params substituted, locals namespaced)
+3. `[IF]` — resolve conditionals
+4. `[REPEAT]` — expand loops
+5. `[GROUP]…[ENDGROUP]` — the inner scene resolved in isolation, then translated/scaled as a unit
+6. Numeric figures — `[VFIELD]` `[NUMLINE]` `[IMPLICIT]` `[MORPH]` `[GRIDXFORM]` `[AXES]` `[BARS]` `[SCATTER]`
+7. `[PLOT]` → a drawn `[CURVE]` + registered so `onplot`/`tanpoint`/`[TANLINE]` work
+8. `[PT]`/`[CIRCLE]`/`[PATH]`/`[PCURVE]` — resolve relational points, circles & curves (in text order)
+9. `[PATH]`/`[PCURVE]` → dense `[CURVE]`; `[BISECT]`/`[TANLINE]`/`[AREA]` → lines/regions
+10. `@@NAME` → family point-lists, `@NAME` → coordinates
+11. `[CIRCLE]` → `[ELLIPSE]`, `[RIGHTANGLE]` → `[POLY]`, then `[ANGLEARC]`/`[DIM]` (post-@ numeric)
+
+Names may contain underscores (`[A-Za-z][A-Za-z0-9_]*`) — macro locals are namespaced to
+`u1_NAME` and resolve like any other name.
+
+Each animation frame runs this same pipeline with the swept variable substituted in. Marks
+are finally parsed **in document order**, so the `[COLOR]`/`[THEME]` pen applies to exactly
+the marks that follow it.
+

@@ -1,0 +1,46 @@
+# H Docs
+
+> Documentation for the H system — home of Woodr, Woopy's drawing language.
+
+## Docs
+
+- [H Docs](/woodr-docs\): Documentation for the **H** system — an event-sourced personal-computing environment.
+- [Abstraction](/woodr-docs\woodr\abstraction): Woodr lets you **coin a construction once and reuse it** — the equivalent of functions.
+This is the feature that turns a fixed vocabulary into a language that can grow.
+- [Choreography](/woodr-docs\woodr\choreography): Woodr is unusual among drawing languages: it has **time**. A Woodr program isn't rendered
+all at once — it *plays*, in step with what Woopy is saying.
+- [Color](/woodr-docs\woodr\color): By default Woodr draws in a single blue accent. `[COLOR]` changes the **pen**: every mark
+drawn *after* it takes that color, until the next `[COLOR]` — or the turn / a `[CLEAR]`
+resets it to blue.
+- [Conditionals](/woodr-docs\woodr\conditionals): Woodr can keep or drop part of a drawing based on a comparison.
+- [Constraints](/woodr-docs\woodr\constraints): These are the advanced relational forms — points defined by *solving* a geometric
+constraint. Like the rest of the [kernel](/woodr/kernel), you state the relationship and
+the renderer computes the exact pixel. They're written the same way: `[PT:NAME:EXPR]`.
+- [Functions & curves](/woodr-docs\woodr\functions): For a graph, a curve, or anything with a **tangent**, Woodr has a real function object. You
+give a formula; the renderer samples it, draws the exact curve, and lets you place points
+*on* it and draw tangents that genuinely *touch* it. No hand-picked points, no eyeballing.
+- [Getting started](/woodr-docs\woodr\getting-started): Woodr is a set of **tags** interleaved with what Woopy says. Tags are never spoken — only
+the text *outside* tags is read aloud. Everything renders on a transparent overlay on the
+active monitor, in pixels: `x` grows right (`0..W`), `y` grows **down** (`0..H`).
+- [Woodr](/woodr-docs\woodr\): **Woodr** — *Woopy's drawing* — is the language Woopy uses to draw on your screen while it
+explains something out loud. You don't write Woodr; Woopy speaks it. But it is a real
+language, with the properties that make one:
+- [Iteration](/woodr-docs\woodr\iteration): When a figure needs many points in a pattern — a polygon's vertices, a grid, tick marks,
+orbiting dots — you don't list them by hand. Woodr has a loop.
+- [Points & the kernel](/woodr-docs\woodr\kernel): The **kernel** is the small core of Woodr that everything else is built on: **named,
+relationally-defined points**. This is where Woodr's precision comes from — you describe a
+point by its *relationship* to other things, and the renderer computes the exact pixel.
+- [The library](/woodr-docs\woodr\library): The [kernel](/woodr/kernel) builds most figures directly. For **named or complex**
+constructions — a theorem diagram, a set of axes, a bell curve, a tree — Woodr has a
+searchable **library** of verified recipes, fetched only when needed.
+- [Marks — the vocabulary](/woodr-docs\woodr\marks): Marks are the things Woodr actually draws. Everything higher-level (relational points,
+iteration, macros) ultimately compiles to these. Coordinates are pixels on the active
+screen; any coordinate can be a `@NAME` reference.
+- [Motion](/woodr-docs\woodr\motion): Choreography (see [Choreography](/woodr/choreography)) reveals marks *step by step* as you
+speak. **Motion** is different: it makes a mark **move continuously** over a span of seconds.
+This is what puts Woodr in Manim's space — but live, spoken, and on your real screen.
+- [Paths & parametric curves](/woodr-docs\woodr\paths): `[CURVE]` (see [Marks](/woodr/marks)) smooths through raw coordinates. **`[PATH]`** and
+**`[PCURVE]`** are the relational, registered upgrades: they take named points or formulas,
+they can be closed and tensioned, and — crucially — you can put **points on them**.
+- [Reference](/woodr-docs\woodr\reference): The complete Woodr surface. Coordinates are pixels on the active screen (`x` right, `y`
+down); any coordinate may be a `@NAME` reference.
